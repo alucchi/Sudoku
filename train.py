@@ -1,6 +1,7 @@
 #!/usr/bin/env python
-"""Train an MLP to solve Sudoku puzzles on the certen/Sudoku-1M-Puzzles dataset."""
+"""Train an MLP or a transformer to solve Sudoku puzzles on the certen/Sudoku-1M-Puzzles dataset."""
 
+import argparse
 import time
 
 import matplotlib.pyplot as plt
@@ -8,7 +9,8 @@ import torch
 from datasets import Features, Value, load_dataset
 
 
-from model import NeuralNetwork
+from model import NeuralNetwork as Transformer
+from model_MLP import NeuralNetwork as MLP
 from utils import plot_sudoku
 
 
@@ -39,7 +41,7 @@ def load_data():
     return Xtr, Ytr, Xdev, Ydev
 
 
-def train(net, Xtr, Ytr, device, num_epochs=50, batch_size=2048, lr=1e-3):
+def train(net, Xtr, Ytr, device, num_epochs=50, batch_size=2048, lr=2e-4):
     optimizer = torch.optim.Adam(net.parameters(), lr=lr)
     lossi = []
     accuracies = []
@@ -82,14 +84,14 @@ def evaluate(net, Xdev, Ydev, device, batch_size=2048):
     return dev_loss
 
 
-def plot_training_curves(lossi, accuracies, dev_loss):
+def plot_training_curves(lossi, accuracies, dev_loss, model_name):
     plt.figure(figsize=(20, 4))
     plt.plot(lossi)
     plt.yscale('log')
     plt.xlabel('step')
     plt.ylabel('loss')
     plt.title('training loss')
-    plt.savefig('training_loss.png')
+    plt.savefig(f'training_loss_{model_name}.png')
 
     print(f"dev loss: {dev_loss.item():.4f}")
 
@@ -99,10 +101,18 @@ def plot_training_curves(lossi, accuracies, dev_loss):
     plt.xlabel('step')
     plt.ylabel('loss')
     plt.title('training accuracy')
-    plt.savefig('training_accuracy.png')
+    plt.savefig(f'training_accuracy_{model_name}.png')
+
+
+MODELS = {"mlp": MLP, "transformer": Transformer}
 
 
 def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--model", choices=MODELS, default="transformer",
+                        help="Architecture to train (default: transformer)")
+    args = parser.parse_args()
+
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     Xtr, Ytr, Xdev, Ydev = load_data()
@@ -110,7 +120,7 @@ def main():
     if device.type == "cuda":
         torch.cuda.manual_seed_all(2026)
     layer_sizes = [2048] * 4
-    net = NeuralNetwork(layer_sizes).to(device)
+    net = MODELS[args.model](layer_sizes).to(device)
 
     print(f"Number of parameters: {sum(p.numel() for p in net.parameters())}")
     print(f"Network architecture:\n{net}")
@@ -130,19 +140,20 @@ def main():
         print("Peak GPU memory: N/A (training ran on CPU)")
 
     dev_loss = evaluate(net, Xdev, Ydev, device)
-    plot_training_curves(lossi, accuracies, dev_loss)
+    plot_training_curves(lossi, accuracies, dev_loss, args.model)
 
     torch.save(
         {
+            "model": args.model,
             "layer_sizes": layer_sizes,
             "state_dict": net.state_dict(),
         },
-        "sudoku_model.pt",
+        f"sudoku_model_{args.model}.pt",
     )
 
     with torch.no_grad():
         prediction = net(Xdev[0].unsqueeze(0).to(device)).argmax(dim=1) + 1
-    plot_sudoku(prediction, Ydev[0], Xdev[0], out_path="sudoku_prediction.png")
+    plot_sudoku(prediction, Ydev[0], Xdev[0], out_path=f"sudoku_prediction_{args.model}.png")
 
     print(f"Final training accuracy: {accuracies[-1]:.2%}")
 

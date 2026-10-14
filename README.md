@@ -45,7 +45,8 @@ take substantial time.
 ## Train
 
 ```bash
-python train.py
+python train.py                 # transformer (model.py), the default
+python train.py --model mlp     # MLP (model_MLP.py)
 ```
 
 The first 90% of examples are used for training and the remaining 10% for
@@ -55,11 +56,12 @@ size 2048, and learning rate `0.001`.
 The random seed is fixed at `2026`. Adjust the defaults in `train.py` to change
 the training configuration.
 
-Training writes these files in the current directory, replacing existing ones:
+Training writes these files in the current directory, replacing existing ones
+(`<model>` is `mlp` or `transformer`):
 
-- `sudoku_model.pt`: model architecture and trained weights.
-- `training_loss.png` and `training_accuracy.png`: training curves.
-- `sudoku_prediction.png`: one validation prediction beside its solution.
+- `sudoku_model_<model>.pt`: model architecture and trained weights.
+- `training_loss_<model>.png` and `training_accuracy_<model>.png`: training curves.
+- `sudoku_prediction_<model>.png`: one validation prediction beside its solution.
 
 The console reports validation loss, empty-cell accuracy, training time, and
 GPU memory usage when applicable.
@@ -97,6 +99,46 @@ Synthetic grids are random digits and are only useful for checking execution.
 Use `--max-train` and `--max-validation` to limit real-data runs, or
 `python grid.py --help` to see all options. For online Weights & Biases logging,
 run `wandb login` and use `--wandb-mode online`.
+
+## Best Hyper-parameters
+
+Both models were selected by validation empty-cell accuracy (seed `2026`,
+900,000 training examples).
+
+### MLP
+
+Found by `tune.py` (full log in `tuning.txt`) for the one-hot-input MLP in
+`model_MLP.py`.
+
+| Hyper-parameter | Value |
+| --- | --- |
+| Layers | 4 |
+| Width | 2048 |
+| Learning rate | 0.001 |
+| Batch size | 2048 |
+| Epochs | 100 |
+
+Validation empty-cell accuracy: 81.12%; test: 80.98% (16.37% of test puzzles
+fully solved). A second seed (`2027`) reached 77.08% on validation. The best
+epoch was at the 100-epoch limit, so longer training may help.
+
+### Transformer
+
+Found by `grid.py` for the attention model in `model.py` (embedding dimension
+256; "width" is the feed-forward hidden size of each attention block). Best
+run: `grid_results_26476526`.
+
+| Hyper-parameter | Value |
+| --- | --- |
+| Attention blocks | 8 |
+| Feed-forward width | 2048 |
+| Learning rate | 0.0002 |
+| Batch size | 2048 |
+| Epochs | 45 (best of 50) |
+
+Validation empty-cell accuracy: 99.63%. With 4 blocks, the best result was
+98.10% (learning rate 0.0005, 50 epochs). Learning rates of 0.002 or higher
+were unstable.
 
 ## Inspect Predictions
 
