@@ -52,7 +52,6 @@ block, giving that block's feed-forward width.
 | `model_MLP.py` | Defines the MLP, one-hot encoding, and loss. |
 | `train.py` | Loads data, trains and evaluates either model, and saves results. |
 | `grid.py` | Grid search over learning rates, block counts, and widths for the transformer. |
-| `tune.py` | Staged hyper-parameter search used for the MLP; results in `tuning.txt`. |
 | `utils.py` | Plots predictions beside the correct solution. |
 | `inference.ipynb` | Loads a saved model and visualizes a prediction. |
 | `submit_train.sh`, `submit_grid.sh` | SLURM scripts for `train.py` and `grid.py`. |
@@ -102,9 +101,9 @@ GPU memory usage when applicable.
 These curves come from a 4-block transformer run (97.57% validation
 accuracy), saved before output names included the model type.
 
-![Training loss](training_loss.png)
+![Training loss](training_loss_transformer.png)
 
-![Training accuracy on originally empty cells](training_accuracy.png)
+![Training accuracy on originally empty cells](training_accuracy_transformer.png)
 
 ## Compare Configurations
 
@@ -119,15 +118,6 @@ Run a grid search with local output and experiment logging disabled:
 python grid.py --learning-rates 0.0005 0.0002 --layers 4 8 --widths 2048 \
   --epochs 50 --wandb-mode disabled
 ```
-
-On the cluster, `sbatch submit_grid.sh [grid.py options]` writes to
-`grid_results_<job id>/`.
-
-Results are saved in `grid_results/`, including `results.json`,
-`grid_curves.png`, `best_model.pt`, `best_config.json`, and per-trial results
-and plots. The winner is selected by validation empty-cell accuracy, with
-lower validation loss breaking ties. Use a new `--output` directory for each
-run; an existing directory containing `results.json` is rejected.
 
 For a quick pipeline check without downloading the dataset:
 
@@ -154,8 +144,7 @@ Both models were selected by validation empty-cell accuracy (seed `2026`,
 
 ### MLP
 
-Found by `tune.py` (full log in `tuning.txt`) for the one-hot-input MLP in
-`model_MLP.py`.
+Found by `grid.py` for the one-hot-input MLP in `model_MLP.py`.
 
 | Hyper-parameter | Value |
 | --- | --- |
@@ -172,8 +161,7 @@ epoch was at the 100-epoch limit, so longer training may help.
 ### Transformer
 
 Found by `grid.py` for the attention model in `model.py` (embedding dimension
-256; "width" is the feed-forward hidden size of each attention block). Best
-run: `grid_results_26476526`.
+256; "width" is the feed-forward hidden size of each attention block). 
 
 | Hyper-parameter | Value |
 | --- | --- |
@@ -181,7 +169,7 @@ run: `grid_results_26476526`.
 | Feed-forward width | 2048 |
 | Learning rate | 0.0002 |
 | Batch size | 2048 |
-| Epochs | 45 (best of 50) |
+| Epochs | 50 |
 
 Validation empty-cell accuracy: 99.63%. With 4 blocks, the best result was
 98.10% (learning rate 0.0005, 50 epochs). Learning rates of 0.002 or higher
