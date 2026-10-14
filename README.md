@@ -54,7 +54,6 @@ block, giving that block's feed-forward width.
 | `grid.py` | Grid search over learning rates, block counts, and widths for the transformer. |
 | `utils.py` | Plots predictions beside the correct solution. |
 | `inference.ipynb` | Loads a saved model and visualizes a prediction. |
-| `submit_train.sh`, `submit_grid.sh` | SLURM scripts for `train.py` and `grid.py`. |
 
 ## Setup
 
