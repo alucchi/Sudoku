@@ -108,8 +108,8 @@ accuracy), saved before output names included the model type.
 
 `grid.py` searches over transformer configurations (it imports `model.py`).
 `--layers` sets the number of attention blocks and `--widths` their
-feed-forward width. Defaults are 8 blocks of width 2048, learning rates
-`0.0005` and `0.0002`, 50 epochs, and batch size 2048.
+feed-forward width. Defaults are 2, 4, and 8 blocks of width 512 and 2048,
+learning rates `0.0003`, `0.001`, and `0.003`, 30 epochs, and batch size 2048.
 
 Run a grid search with local output and experiment logging disabled:
 
@@ -143,7 +143,9 @@ Both models were selected by validation empty-cell accuracy (seed `2026`,
 
 ### MLP
 
-Found by `grid.py` for the one-hot-input MLP in `model_MLP.py`.
+Found by manual search over layer widths and learning rates for the
+one-hot-input MLP in `model_MLP.py` (`grid.py` only searches the
+transformer).
 
 | Hyper-parameter | Value |
 | --- | --- |
@@ -153,9 +155,9 @@ Found by `grid.py` for the one-hot-input MLP in `model_MLP.py`.
 | Batch size | 2048 |
 | Epochs | 100 |
 
-Validation empty-cell accuracy: 81.12%; test: 80.98% (16.37% of test puzzles
-fully solved). A second seed (`2027`) reached 77.08% on validation. The best
-epoch was at the 100-epoch limit, so longer training may help.
+Validation empty-cell accuracy: 81.12%. A second seed (`2027`) reached
+77.08% on validation. The best epoch was at the 100-epoch limit, so longer
+training may help.
 
 ### Transformer
 
@@ -172,8 +174,7 @@ Found by `grid.py` for the attention model in `model.py` (embedding dimension
 
 Validation empty-cell accuracy: 99.63%. With 4 blocks, the best result was
 98.10% (learning rate 0.0005, 50 epochs). Learning rates of 0.002 or higher
-were unstable. Output files from an 8-block training run with `train.py`
-(99.62% validation accuracy) are in `layer8/`.
+were unstable.
 
 ## Inspect Predictions
 
@@ -189,10 +190,11 @@ jupyter lab inference.ipynb
 Run the notebook cells to load a checkpoint, select a dataset example, and
 compare its prediction with the solution. Change `example_index` to view
 another puzzle, or `model_path` to load a different checkpoint, such as
-`sudoku_model_mlp.pt`, `sudoku_model_transformer.pt` or
-`grid_results/best_model.pt`. Green backgrounds mark originally empty cells;
-red hatching marks incorrect predictions.
+`sudoku_model_mlp.pt` or `sudoku_model_transformer.pt`. Green backgrounds
+mark originally empty cells; red hatching marks incorrect predictions.
 
 The notebook loads both MLP and transformer checkpoints. It reads the model
 type saved by `train.py`; for older checkpoints without it, it detects the
 transformer by its attention-block weights.
+
+`attention_analysis.ipynb` loads a trained transformer checkpoint and plots, for a chosen query cell, its per-block attention over the 9x9 grid alongside the input puzzle; `training_example_attention.png` is the saved figure from that notebook.
