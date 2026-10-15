@@ -198,3 +198,5 @@ type saved by `train.py`; for older checkpoints without it, it detects the
 transformer by its attention-block weights.
 
 `attention_analysis.ipynb` loads a trained transformer checkpoint and plots, for a chosen query cell, its per-block attention over the 9x9 grid alongside the input puzzle; `training_example_attention.png` is the saved figure from that notebook.
+
+![Attention over the 9x9 grid for a chosen query cell](training_example_attention.png)
